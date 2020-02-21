@@ -4,8 +4,11 @@ import runlength
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import optimize
+from sklearn.svm import SVR
 import math
 import zlib
+import pickle
+import sys
 
 
 # add test image path
@@ -94,11 +97,15 @@ def poly_compress(arr, k, deg):
         y = arr[i:i+inc]
         if(deg > inc):
             deg = 0
-        z = np.polyfit(x, y, deg=deg)
-        p = np.poly1d(z)
 
+        regressor = SVR(kernel="rbf", C=100)
+        fitted_regressor = regressor.fit(x, y)
+        z = picle.dumps(fitted_regressor)
         polynomial_coefficients.append(z)
-        diff = (p(x).astype(np.int8)-y)
+        
+        x_reshaped = x.reshape(-1, 1)
+
+        diff = regressor.predict((x_reshaped).astype(np.int8)-y)
         differences += list(diff)
         # xp = np.linspace(0, len(x), len(x)*100)
         # plt.figure(figsize=(6.5,4))
@@ -117,10 +124,11 @@ def poly_decompress(differences, coefficients, k):
         if i+n_poly > len(differences):
             inc = len(differences)-i
         z = coefficients[i/n_poly]
-        p = np.poly1d(z)
+        regressor = pickle.loads(z)
         diff = differences[i:i+inc]
         x = np.arange(inc)
-        decoded_values += list(p(x).astype(np.int8)-diff)
+        x_reshaped = x.reshape(-1, 1)
+        decoded_values += list(regressor.predict(x_reshaped).astype(np.int8)-diff)
     return np.asarray(decoded_values)
 
 # def split(array, nrows, ncols):
@@ -231,9 +239,10 @@ def poly_decompress_grid(differences, coefficients, n, m):
         diff = np.asarray(differences[i]).ravel()
         coeff = coefficients[i]
         z = coeff
-        p = np.poly1d(z)
+        regressor = pickle.loads(z)
         x = np.arange(len(diff))
-        decoded_values += list(p(x).astype(np.int8)-diff)
+        x_reshaped = x.reshape(-1, 1)
+        decoded_values += list(regressor.predict(x_reshaped).astype(np.int8)-diff)
 
     # decoded_values = np.reshape(decoded_values, img_shape)
     # decoded_values = split(decoded_values, n, m)
