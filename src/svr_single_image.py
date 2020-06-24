@@ -11,8 +11,9 @@ from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor, VotingRegressor
 from sklearn.ensemble import GradientBoostingRegressor
-from sklearn.linear_model import BayesianRidge, Lars, LogisticRegression, Lasso, HuberRegressor, TheilSenRegressor
+from sklearn.linear_model import RANSACRegressor, Ridge, BayesianRidge, Lars, LogisticRegression, Lasso, HuberRegressor, TheilSenRegressor, ElasticNet, OrthogonalMatchingPursuit,PassiveAggressiveRegressor,LassoLars
 from sklearn.kernel_ridge import KernelRidge
+from sklearn.neural_network import MLPRegressor
 import math
 import zlib
 import pickle
@@ -20,7 +21,7 @@ import sys
 
 
 # add test image path
-path = os.path.abspath("../data/heic1509a.tif")
+path = os.path.abspath("../data/test_tiff4.tif")
 z_lib = 0
 improved_zlib = 0
 
@@ -67,12 +68,21 @@ def poly_compress(arr, k, deg):
         if(deg > inc):
             deg = 0
 
-        #regressor = SVR(kernel="rbf", C=1)
+        #regressor = SVR()
         #regressor = SGDRegressor()
         #regressor = GaussianProcessRegressor()
+        #regressor = DecisionTreeRegressor()
         #regressor = BayesianRidge()
-        regressor = LinearRegression()
+        #regressor = LinearRegression()
         #regressor = TheilSenRegressor()
+        #regressor = Lars()
+        #regressor = HuberRegressor()
+        #regressor = Ridge()
+        #regressor = ElasticNet()
+        #regressor = OrthogonalMatchingPursuit()
+        #regressor = PassiveAggressiveRegressor()
+        #regressor = LassoLars()
+        regressor = RANSACRegressor()
         x_reshaped = x.reshape(-1, 1)
         #print(x_reshaped)
         regressor = regressor.fit(x_reshaped, y)

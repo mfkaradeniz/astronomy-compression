@@ -31,12 +31,23 @@ def poly_compress(arr, k, deg, regressor):
 
         x_reshaped = x.reshape(-1, 1)
         regressor = regressor.fit(x_reshaped, y)
+        #print(regressor.coef_)
         z = pickle.dumps(regressor)
         polynomial_coefficients.append(z)
         
-
-        diff = regressor.predict(x_reshaped).astype(np.int8) - y
+        if (str(img_dtype) == "uint8"):
+            diff = regressor.predict(x_reshaped).astype(np.uint8) - y
+        else:
+            diff = regressor.predict(x_reshaped).astype(np.uint16) - y
         differences += list(diff)
+        #xp = np.linspace(0, len(x_reshaped), len(x_reshaped)*100)
+        #plt.figure(figsize=(6.5,4))
+        #plt.hist(x=differences, bins='auto')
+        #plt.plot(x,y,'o',label='data')
+        #plt.plot(x, regressor.predict(x_reshaped),label='polyfit')
+        #plt.xlabel("x")
+        #plt.ylabel("f(x)")
+        #plt.show()
     return (np.asarray(differences), polynomial_coefficients)
 
 
@@ -53,7 +64,10 @@ def poly_decompress(differences, coefficients, k):
         diff = differences[i:i+inc]
         x = np.arange(inc)
         x_reshaped = x.reshape(-1, 1)
-        decoded_values += list(regressor.predict(x_reshaped).astype(np.int8)-diff)
+        if (str(img_dtype) == "uint8"):
+            decoded_values += list(regressor.predict(x_reshaped).astype(np.uint8)-diff)
+        else:
+            decoded_values += list(regressor.predict(x_reshaped).astype(np.uint8)-diff)
     return np.asarray(decoded_values)
 
 
@@ -75,7 +89,10 @@ def merge(array, nrows, ncols):
     height, width = img_shape
     v = []
     for i in range(0, height//(nrows)):
-        h = np.empty((nrows,ncols),dtype=np.int8)
+        if (str(img_dtype) == "uint8"):
+            h = np.empty((nrows,ncols),dtype=np.int8)
+        else:
+            h = np.empty((nrows,ncols),dtype=np.int16)
         h2 = []
         for j in range(0, width//(ncols)):
             window = array[i*(width//ncols)+j].reshape(nrows,ncols)
@@ -110,7 +127,11 @@ def poly_decompress_grid(differences, coefficients, n, m):
         regressor = pickle.loads(z)
         x = np.arange(len(diff))
         x_reshaped = x.reshape(-1, 1)
-        decoded_values += list(regressor.predict(x_reshaped).astype(np.int8)-diff)
+        if (str(img_dtype) == "uint8"):
+            decoded_values += list(regressor.predict(x_reshaped).astype(np.uint8)-diff)
+        else:
+            decoded_values += list(regressor.predict(x_reshaped).astype(np.uint16)-diff)
+
 
     decoded_values = np.reshape(decoded_values, img_shape)
     decoded_values = split(decoded_values, n, m)
@@ -121,14 +142,15 @@ def poly_decompress_grid(differences, coefficients, n, m):
 
 
 ## Define the regressor.
-regressor =  LinearRegression()
+regressor =  OrthogonalMatchingPursuit()
 
 ## Choose grid length
 n1 = 30
 n2 = 30
 print("n1=%d, n2=%d, model=%s" % (n1,n2,regressor))
 
-file_paths = glob.glob("../data/top100/*.tif")
+file_paths = glob.glob("../data/nonastro/*.tif")
+
 
 z_lib = 0
 improved_zlib = 0
@@ -136,7 +158,7 @@ improved_zlib = 0
 z_lib_win_count = 0
 improved_zlib_win_count = 0
 total_count = 0
-
+two_channel_images_count = 0
 for path in file_paths:
     # add test image path
     #path = os.path.abspath("../data/heic1509a.tif")
@@ -144,11 +166,21 @@ for path in file_paths:
     ## Read image.
     img_path = path
     print(img_path)
-    img = cv2.imread(img_path,0)
+    img = cv2.imread(img_path,-1)
+    if (len(img.shape) == 3):
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        print(img.dtype)
+    else:
+        print("WARNING:this image has " + str(len(img.shape)) + " channels")
+        two_channel_images_count += 1
     img_shape = img.shape
+    img_dtype = img.dtype
 
     ## Compress with Zlib.
-    x = np.asarray(img.ravel()).astype(np.uint8)
+    if (str(img_dtype) == "uint8"):
+        x = np.asarray(img.ravel()).astype(np.uint8)
+    else:
+        x = np.asarray(img.ravel()).astype(np.uint16)
     original_image = pickle.dumps(x)
     y = zlib.compress(original_image)
     compress_ratio_zlib = (float(len(original_image)) - float(len(y))) / float(len(original_image))
@@ -156,7 +188,10 @@ for path in file_paths:
     print('Compressed zlib: %f%%' % (100.0 * compress_ratio_zlib))
 
     ## Compress with fitting.
-    values = img.ravel().astype(np.uint8)
+    if (str(img_dtype) == "uint8"):
+        values = img.ravel().astype(np.uint8)
+    else:
+        values = img.ravel().astype(np.uint16)
     k = 10000
     deg = 4
 
@@ -179,12 +214,20 @@ for path in file_paths:
 
     ## Compute differences and coefficients..
     differences, polynomial_coefficients = poly_compress_grid(img, n, m, deg, regressor)
-    differences = differences.astype(np.int8)
-    x = np.asarray(img.ravel()).astype(np.uint8)
+    if (str(img_dtype) == "uint8"):
+        differences = differences.astype(np.uint8)
+        x = np.asarray(img.ravel()).astype(np.uint8)
+    else:
+        differences = differences.astype(np.uint16)
+        x = np.asarray(img.ravel()).astype(np.uint16)
+
     original_image = pickle.dumps(x)
 
     # Compress differences
-    x = np.asarray(differences).astype(np.int8)
+    if (str(img_dtype) == "uint8"):
+        x = np.asarray(differences).astype(np.uint8)
+    else:
+        x = np.asarray(differences).astype(np.uint16)
     buffer = pickle.dumps(x)
     y = zlib.compress(buffer)
 
@@ -198,7 +241,10 @@ for path in file_paths:
 
     ## Check losssless.
     decoded_values = poly_decompress_grid(differences, polynomial_coefficients, n1, n2)
-    decoded_values = np.asarray(decoded_values).astype(np.uint8)
+    if (str(img_dtype) == "uint8"):
+        decoded_values = np.asarray(decoded_values).astype(np.uint8)
+    else:
+        decoded_values = np.asarray(decoded_values).astype(np.uint16)
 
     ## Compare with zlib.
     z_lib += compress_ratio_zlib
@@ -216,3 +262,4 @@ print("average zlib percent: "+ str(z_lib/float(total_count)))
 print("average improved zlib percent: "+ str(improved_zlib/float(total_count)))
 print('zlib wins:' + str(z_lib_win_count))
 print('improved zlib wins:' + str(improved_zlib_win_count))
+print('two_channel_images_count: ' + str(two_channel_images_count))

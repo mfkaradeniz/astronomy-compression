@@ -9,7 +9,7 @@ import zlib
 
 
 # add test image path
-path = os.path.abspath("../../test2.jpg")
+path = os.path.abspath("../data/test-image.tiff")
 z_lib = 0
 improved_zlib = 0
 
@@ -18,7 +18,7 @@ improved_zlib_win_count = 0
 
 ## Read image.
 img_path = path
-print img_path
+#print img_path
 img = cv2.imread(img_path,0)
 #img = cv2.resize(img, (16,25))
 #img = np.zeros((16,25))
@@ -37,7 +37,7 @@ compress_ratio = (float(len(original_image)) - float(len(y))) / float(len(origin
 compress_ratio_percent_zlib = 100.0 * compress_ratio
 
 compress_ratio2 = float(len(original_image))/ (float(len(y)))
-print 'Compressed zlib: %f%%' % (100.0 * compress_ratio)
+print ('Compressed zlib: %f%%' % (100.0 * compress_ratio))
 #print 'Compressed zlib2: %f' % (compress_ratio2)
 
 values = img.ravel().astype(np.uint8)
@@ -100,11 +100,11 @@ def poly_compress(arr, k, deg):
         polynomial_coefficients.append(z)
         diff = (p(x).astype(np.int8)-y)
         differences += list(diff)
-        # xp = np.linspace(0, len(x), len(x)*100)
-        # plt.figure(figsize=(6.5,4))
-        # plt.plot(x,y,'o',label='data')
-        # plt.plot(xp, p(xp),label='polyfit')
-        # plt.show()
+        xp = np.linspace(0, len(x), len(x)*100)
+        plt.figure(figsize=(6.5,4))
+        plt.plot(x,y,'o',label='data')
+        plt.plot(xp, p(xp),label='polyfit')
+        plt.show()
     return (np.asarray(differences), polynomial_coefficients)
 
 
@@ -399,14 +399,14 @@ compress_ratio_imp_zlib = 100.0 * compress_ratio
 
 
 
-print 'Compressed zlib_polyfit: %f%%' % (100.0 * compress_ratio)
+print ('Compressed zlib_polyfit: %f%%' % (100.0 * compress_ratio))
 
 
 compress_ratio3 = float(len(original_image))/ (float(len(y)))
 #print 'Compressed zlib_polyfit3: %f' % (compress_ratio3)
 
 #--
-#print np.histogram(differences, bins=10)
+print (np.histogram(differences, bins=10))
 #
 
 ## RLE on differences.

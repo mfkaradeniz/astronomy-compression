@@ -6,36 +6,40 @@ import matplotlib.pyplot as plt
 from scipy import optimize
 import math
 import zlib
+import glob
+import pickle
+import sys
 #path = os.path.abspath("data/top100")
-path = os.path.abspath("../data/nonastro")
+path = os.path.abspath("../data")
 z_lib = 0
 improved_zlib = 0
-
+file_paths = glob.glob("../data/single_5/*.tif")
 z_lib_win_count = 0
 improved_zlib_win_count = 0
-#for i in range(2, 101):
-for i in range(1, 31):
+for path in file_paths:
+#for i in range(1, 31):
     ## Read image.
-    #img_path = path+"/test_tiff"+str(i)+".tiff"
-    img_path = path+"/"+str(i)+".tif"
-    print img_path
+    img_path = path
+    print(img_path)
     img = cv2.imread(img_path,0)
+    img_shape = img.shape
     #img = cv2.resize(img, (16,25))
     #img = np.zeros((16,25))
-    img_shape = img.shape
-
+    
 
     ## Compress image.
     x = np.asarray(img.ravel()).astype(np.uint8)
     #print robust.mad(x)
-    original_image = np.getbuffer(x)
+
+    original_image = pickle.dumps(x)
+    #original_image = np.getbuffer(x)
     y = zlib.compress(original_image)
     #print "Compressed img size:"+str(len(y))
     compress_ratio = (float(len(original_image)) - float(len(y))) / float(len(original_image))
     compress_ratio_percent_zlib = 100.0 * compress_ratio
     z_lib += compress_ratio_percent_zlib
     compress_ratio2 = float(len(original_image))/ (float(len(y)))
-    #print 'Compressed zlib: %f%%' % (100.0 * compress_ratio)
+    print ('Compressed zlib: %f%%' % (100.0 * compress_ratio))
     #print 'Compressed zlib2: %f' % (compress_ratio2)
 
     values = img.ravel().astype(np.uint8)
@@ -84,6 +88,7 @@ for i in range(1, 31):
         differences = []
         polynomial_coefficients = []
         n_poly = len(arr)/k
+        n_poly = int(n_poly)
         for i in range(0, len(arr), n_poly):
             inc = n_poly
             if i+n_poly > len(arr):
@@ -135,11 +140,14 @@ for i in range(1, 31):
         #win_height = img.shape[0]/nrows
         #win_width = img.shape[1]/ncols
         win_height = nrows
+        win_height = int(win_height)
         win_width = ncols
+        win_width = int(win_width)
         vecs = []
         #--
         #print "splitting.."
         #--
+        print(img.shape[0],win_height)
         for r in range(0,img.shape[0], win_height):
             for c in range(0,img.shape[1], win_width):
                 window = img[r:r+win_height,c:c+win_width]
@@ -173,11 +181,11 @@ for i in range(1, 31):
         #print array
         v = []
         #print v.shape
-        for i in range(0, height/(nrows)):
+        for i in range(0, int(height/(nrows))):
             h = np.empty((nrows,ncols),dtype=np.int8)
             h2 = []
-            for j in range(0, width/(ncols)):
-                window = array[i*(width/ncols)+j].reshape(nrows,ncols)
+            for j in range(0, int(width/(ncols))):
+                window = array[i*(int(width/(ncols)))+j].reshape(nrows,ncols)
                 #print window.shape
                 #print h.shape
                 #print array[j].shape
@@ -257,8 +265,8 @@ for i in range(1, 31):
     # n = img.shape[0]/n1
     # m = img.shape[1]/n2
 
-    n1 = 5
-    n2 = 5
+    n1 = 30
+    n2 = 30
 
     r1 = img_shape[0] % n1
     c1 = img_shape[1] % n2
@@ -342,14 +350,18 @@ for i in range(1, 31):
     #--
     #print "Image size:"+str(len(np.getbuffer(x)))
     #--
-    original_image = np.getbuffer(x)
+
+    #original_image = np.getbuffer(x)
+    original_image = pickle.dumps(x)
 
     x = np.asarray(differences).astype(np.int8)
-    buffer = np.getbuffer(x)
+    #buffer = np.getbuffer(x)
+    buffer = pickle.dumps(x)
     y = zlib.compress(buffer)
 
     x = np.asarray(polynomial_coefficients)
-    buffer = np.getbuffer(x)
+    #buffer = np.getbuffer(x)
+    buffer = pickle.dumps(x)
     y2 = zlib.compress(buffer)
 
     # x = np.asarray(d_remaining1)
@@ -388,9 +400,10 @@ for i in range(1, 31):
 
     compress_ratio = (float(len(original_image)) - float(len(y)+len(y2))) / float(len(original_image))
     compress_ratio_imp_zlib = 100.0 * compress_ratio
+    print('Compressed imp_zlib: %f%%' % (compress_ratio_imp_zlib))
     if compress_ratio_percent_zlib > compress_ratio_imp_zlib:
         z_lib_win_count += 1
-        print 'WARNING: zlib won!' + 'this is the image: ' + img_path
+        print ('WARNING: zlib won!' + 'this is the image: ' + img_path)
     elif compress_ratio_percent_zlib < compress_ratio_imp_zlib:
         improved_zlib_win_count += 1
 
@@ -448,8 +461,8 @@ for i in range(1, 31):
     #decoded_rle = runlength.rldecode(decoded_starts,decoded_lengths,decoded_values)
     #decoded_img = decoded_rle.astype(np.uint8).reshape(img_shape)
 
-print "average zlib percent: "+ str(z_lib/float(99))
-print "average improved zlib percent: "+ str(improved_zlib/float(99))
-print 'zlib wins:' + str(z_lib_win_count)
-print 'improved zlib wins:' + str(improved_zlib_win_count)
+print ("average zlib percent: "+ str(z_lib/float(99)))
+print ("average improved zlib percent: "+ str(improved_zlib/float(99)))
+print ('zlib wins:' + str(z_lib_win_count))
+print ('improved zlib wins:' + str(improved_zlib_win_count))
 #print ' hebele' + str(z_lib/float(5)), improved_zlib
