@@ -239,6 +239,13 @@ for path in file_paths:
     compress_ratio_percent_reg = 100.0 * compress_ratio_reg
     print('Compressed zlib_regressoion: %f%%' % (100.0 * compress_ratio_reg))
 
+    # Decompress
+    differences = pickle.loads(zlib.decompress(y))
+    #print(len(differences))
+    #print(len(polynomial_coefficients))
+    polynomial_coefficients = pickle.loads(zlib.decompress(y2))
+    #print(len(polynomial_coefficients))
+
     ## Check losssless.
     decoded_values = poly_decompress_grid(differences, polynomial_coefficients, n1, n2)
     if (str(img_dtype) == "uint8"):
@@ -256,6 +263,8 @@ for path in file_paths:
         improved_zlib_win_count += 1
 
     total_count += 1
+
+    print ("Decode error: "+str(np.array_equal(decoded_values.ravel(), img.ravel().astype(np.uint8))))
 
 
 print("average zlib percent: "+ str(z_lib/float(total_count)))

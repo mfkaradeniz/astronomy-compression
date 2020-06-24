@@ -204,7 +204,11 @@ for path in file_paths:
     print(img.dtype)
     print(len(img.shape))
     print(img.shape)
+
     if (len(img.shape) == 3):
+        #b = img[:,:,0]
+        #g = img[:,:,1]
+        #r = img[:,:,2]
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         print(img.dtype)
     else:
@@ -359,7 +363,8 @@ for path in file_paths:
     
     
     print ("Decode error: "+str(np.array_equal(decoded_values.ravel(), img.ravel().astype(np.uint8))))
-    
+    print (decoded_values.shape)
+    cv2.imwrite("../data/out.jpg", decoded_values)
 
     #decoded_img = np.asarray(decoded_values).astype(np.uint32).reshape(img_shape)
     #print "Decoded image size: "+str(len(np.getbuffer(decoded_values)))
