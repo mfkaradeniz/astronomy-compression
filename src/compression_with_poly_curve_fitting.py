@@ -186,7 +186,7 @@ def poly_decompress_grid(differences, coefficients, n, m):
 n1 = 30
 n2 = 30
 
-file_paths = glob.glob("../data/less10mb/*.tif")
+file_paths = glob.glob("../data/*.tiff")
 
 z_lib = 0
 improved_zlib = 0
@@ -333,14 +333,14 @@ for path in file_paths:
     print(len(differences))
     ## Decompress
     #ADDED NEW
-    '''
-    differences = zlib.decompress(pickle.loads())
+    
+    differences = pickle.loads(zlib.decompress(y))
     print(len(differences))
     print(len(polynomial_coefficients))
-    polynomial_coefficients = zlib.decompress(pickle.loads(y2))
+    polynomial_coefficients = pickle.loads(zlib.decompress(y2))
     print(len(polynomial_coefficients))
     #ADDED NEW
-    '''
+   
     decoded_values = poly_decompress_grid(differences, polynomial_coefficients, n1, n2)
     if (str(img_dtype) == "uint8"):
         decoded_values = np.asarray(decoded_values).astype(np.uint8)
@@ -357,9 +357,9 @@ for path in file_paths:
     # print np.asarray(decoded_values).astype(np.uint32).ravel()[-1000:]
     # print img.ravel()[-1000:]
     
-    #--
-    #print "Decode error: "+str(np.array_equal(decoded_values.ravel(), img.ravel()))
-    #--
+    
+    print ("Decode error: "+str(np.array_equal(decoded_values.ravel(), img.ravel().astype(np.uint8))))
+    
 
     #decoded_img = np.asarray(decoded_values).astype(np.uint32).reshape(img_shape)
     #print "Decoded image size: "+str(len(np.getbuffer(decoded_values)))
